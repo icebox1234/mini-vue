@@ -7,14 +7,17 @@ const rendererOptions = {
     },
     insert(child, parent, anchor) {
         parent.insertBefore(child, anchor || null);
+    },
+    setElementText(el, text) {
+        el.textContent = text;
     }
 };
 
-function ensureRenerer(rendererOptions) {
+function ensureRenerer() {
     return renderer || (renderer = createRenderer(rendererOptions));
 }
 
 export function createApp(rootComponent) {
     console.log(rootComponent);
-    return ensureRenerer(rendererOptions).createApp(rootComponent);
+    return ensureRenerer().createApp(rootComponent);
 }
