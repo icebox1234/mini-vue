@@ -10,6 +10,9 @@ const rendererOptions = {
     },
     setElementText(el, text) {
         el.textContent = text;
+    },
+    createElement(type) {
+        return document.createElement(type);
     }
 };
 
@@ -18,6 +21,13 @@ function ensureRenerer() {
 }
 
 export function createApp(rootComponent) {
-    console.log(rootComponent);
-    return ensureRenerer().createApp(rootComponent);
+    // console.log(rootComponent);
+    // return ensureRenerer().createApp(rootComponent);
+    const app = ensureRenerer().createApp(rootComponent);
+    const { mount } = app;
+    app.mount = (selector) => {
+        const container = document.querySelector(selector);
+        mount(container)
+    }
+    return app;
 }
