@@ -13,6 +13,14 @@ const rendererOptions = {
     },
     createElement(type) {
         return document.createElement(type);
+    },
+    remove(element) {
+        const p = element.parentElement;
+        if (p) {
+            p.removeChild(element);
+        } else {
+            element.remove();
+        }
     }
 };
 
@@ -21,13 +29,12 @@ function ensureRenerer() {
 }
 
 export function createApp(rootComponent) {
-    // console.log(rootComponent);
     // return ensureRenerer().createApp(rootComponent);
     const app = ensureRenerer().createApp(rootComponent);
     const { mount } = app;
     app.mount = (selector) => {
         const container = document.querySelector(selector);
-        mount(container)
+        mount(container);
     }
     return app;
 }

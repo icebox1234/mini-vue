@@ -4,7 +4,9 @@ import { createVNode } from './vnode';
 export function createRenderer(options) {
     const {
         insert: hostInsert,
-        createElement: hostCreateElement
+        createElement: hostCreateElement,
+        setElementText: hostSetElementText,
+        remove: hostRemove
     } = options;
     const render = (vnode, container) => {
         // const container = options.querySelector(selector);
@@ -38,20 +40,75 @@ export function createRenderer(options) {
         if (n1 === null) {
             mountElememt(n2, container);
         } else {
-
+            patchElement(n1, n2);
         }
     };
     const mountElememt = (vnode, container) => {
         const el = hostCreateElement(vnode.type);
         vnode.el = el;
         if (typeof vnode.children === 'string') {
-            el.textContent = vnode.children;
+            hostSetElementText(el, vnode.children);
         } else {
             vnode.children.forEach(child => {
                 patch(null, child, el);
             })
         }
         hostInsert(el, container);
+    }
+    const patchElement = (n1, n2) => {
+        const el = n1.el;
+        n2.el = el;
+        // In fact, need to consider the key of vnode, but this is min vue, so let's forget it
+        if (n1.type === n2.type) {
+            const preChildren = n1.children;
+            const nextChildren = n2.children;
+
+            if (typeof preChildren === 'string') {
+                if (typeof nextChildren === 'string') {
+                    if (preChildren !== nextChildren) {
+                        hostSetElementText(el, nextChildren);
+                    }
+                } else {
+                    hostSetElementText(el, '');
+                    nextChildren.forEach(child => {
+                        patch(null, child, el);
+                    });
+                }
+            } else {
+                if (typeof nextChildren === 'string') {
+                    hostSetElementText(el, '');
+                    nextChildren.forEach(child => {
+                        patch(null, child, el);
+                    });
+                } else {
+                    updateChildren(preChildren, nextChildren, el);
+                }
+            }
+        } else {
+            if (typeof nextChildren === 'string') {
+                hostSetElementText(el, nextChildren);
+            } else {
+                hostSetElementText(el, '');
+                nextChildren.forEach(child => {
+                    patch(null, child, el);
+                });
+            }
+        }
+    }
+    const updateChildren = (preChildren, nextChildren, parentEle) => {
+        const len = Math.min(preChildren.length, nextChildren.length);
+        for (let index = 0; index < len; index++) {
+            patch(preChildren[index], nextChildren[index], parentEle);
+        }
+        if (nextChildren.length > preChildren.length) {
+            nextChildren.slice(len).forEach(child => {
+                patch(null, child, parentEle);
+            })
+        } else {
+            preChildren.slice(len).forEach(child => {
+                hostRemove(child.el);
+            })
+        }
     }
     const processComponent = (n1, n2, container) => {
         if (n1 === null) {
@@ -73,16 +130,20 @@ export function createRenderer(options) {
     }
     const setupRenderEffect = (instance, container) => {
         const componentUpdateFn = () => {
+            const { render } = instance.vnode.type;
             if (!instance.isMounted) {
-                const { render } = instance.vnode.type;
-                const vnode = render.call(instance.data);
+                // save the lastest vnode, for comparation in next update
+                const vnode = (instance.subtree = render.call(instance.data));
                 patch(null, vnode, container);
                 if (instance.vnode.type.mounted) {
                     instance.vnode.type.mounted.call(instance.data);
                 }
                 instance.isMounted = true;
             } else {
-                console.log('update', instance.data);
+                const preTree = instance.subtree;
+                const nextVNode = render.call(instance.data);
+                instance.subtree = nextVNode;
+                patch(preTree, nextVNode, container);
             }
         }
         effect(componentUpdateFn);

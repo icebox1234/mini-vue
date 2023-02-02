@@ -6,7 +6,6 @@ export function reactive(obj) {
     return new Proxy(obj, {
         get(target, key) {
             const value = Reflect.get(target, key);
-            console.log(2)
             track(target, key);
             return value;
         },
@@ -29,7 +28,6 @@ export function effect(fn) {
 
 function track(target, key) {
     if (activeEffect) {
-        console.log(3)
         let depsMap = targetMap.get(target);
         if (!depsMap) {
             targetMap.set(target, (depsMap = new Map()));
